@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"flag"
 	"fmt"
 	"os"
 	"strings"
@@ -10,29 +11,42 @@ import (
 	"github.com/lib/pq"
 )
 
-func doWork(db *sql.DB, work int64) {
-
-}
+var delimeter *string
 
 func getUsers(db *sql.DB) {
+	var rows, err = db.Query(`SELECT u.usename FROM pg_catalog.pg_user u ORDER BY 1;`)
+	if err != nil {
+		fmt.Println("Error: ", err)
+	}
+	names := make([]string, 0)
+
+	for rows.Next() {
+		var name string
+		err = rows.Scan(&name)
+
+		if err != nil {
+			panic(err)
+		}
+		names = append(names, name)
+	}
+
+	fmt.Println(strings.Join(names, *delimeter))
 }
 
-func updateUsers(db *sql.DB) {
-
-}
-
-func waitForNotification(l *pq.Listener) {
+func waitForNotification(l *pq.Listener, db *sql.DB) {
 	select {
 	case <-l.Notify:
 		fmt.Println("Received notification")
+		getUsers(db)
 	case <-time.After(90 * time.Second):
 		go l.Ping()
 	}
 }
 
 func main() {
-	args := os.Args[1:]
-	var conninfo = strings.Join(args, " ")
+	delimeter = flag.String("d", "\n", "Delimiter character")
+	flag.Parse()
+	var conninfo = strings.Join(flag.Args(), " ")
 
 	db, err := sql.Open("postgres", conninfo)
 	if err != nil {
@@ -41,7 +55,7 @@ func main() {
 
 	reportProblem := func(ev pq.ListenerEventType, err error) {
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Fprintln(os.Stderr, err.Error())
 		}
 	}
 
@@ -51,10 +65,9 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("Listening for new users")
+	getUsers(db)
 
 	for {
-		updateUsers(db)
-		waitForNotification(listener)
+		waitForNotification(listener, db)
 	}
 }
