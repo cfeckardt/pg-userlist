@@ -19,7 +19,7 @@ func getUsers(db *sql.DB) {
 		fmt.Println("Error: ", err)
 	}
 	names := make([]string, 0)
-
+	i
 	for rows.Next() {
 		var name string
 		err = rows.Scan(&name)
