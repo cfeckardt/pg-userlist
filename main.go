@@ -15,7 +15,7 @@ var delimeter *string
 var listen *string
 
 func getUsers(db *sql.DB) {
-	var rows, err = db.Query(`SELECT u.usename FROM pg_catalog.pg_user u ORDER BY 1;`)
+	var rows, err = db.Query(`SELECT rolname, rolpassword FROM pg_authid WHERE rolpassword LIKE 'md5%';`)
 	if err != nil {
 		fmt.Println("Error: ", err)
 	}
@@ -23,12 +23,12 @@ func getUsers(db *sql.DB) {
 
 	for rows.Next() {
 		var name string
-		err = rows.Scan(&name)
-
+		var pass string
+		err = rows.Scan(&name, &pass)
 		if err != nil {
 			panic(err)
 		}
-		names = append(names, name)
+		names = append(names, name + " " + pass)
 	}
 
 	fmt.Println(strings.Join(names, *delimeter))
