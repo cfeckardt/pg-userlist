@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 	"time"
@@ -12,7 +13,9 @@ import (
 )
 
 var delimeter *string
+var separator *string
 var listen *string
+var saveFileName *string
 
 func getUsers(db *sql.DB) {
 	var rows, err = db.Query(`SELECT rolname, rolpassword FROM pg_authid WHERE rolpassword LIKE 'md5%';`)
@@ -28,10 +31,25 @@ func getUsers(db *sql.DB) {
 		if err != nil {
 			panic(err)
 		}
-		names = append(names, name + " " + pass)
+		names = append(names, name + *separator + pass)
 	}
 
-	fmt.Println(strings.Join(names, *delimeter))
+	out := strings.Join(names, *delimeter)
+	if len(*saveFileName) > 0 {
+		saveFile(out)
+	} else {
+		fmt.Println(out)
+	}
+}
+
+func saveFile(foo string) {
+	fmt.Println(foo)
+	d1 := []byte(foo)
+
+	err := ioutil.WriteFile(*saveFileName, d1, 0644)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func waitForNotification(l *pq.Listener, db *sql.DB) {
@@ -46,6 +64,8 @@ func waitForNotification(l *pq.Listener, db *sql.DB) {
 
 func main() {
 	delimeter = flag.String("d", "\n", "Delimiter character")
+	separator = flag.String("s", ":", "Field separator/delimeter")
+	saveFileName = flag.String("f", "", "Filename to save output to")
 	listen = flag.String("l", "", "")
 	flag.Parse()
 	var conninfo = strings.Join(flag.Args(), " ")
