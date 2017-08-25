@@ -13,4 +13,4 @@ Whenever a user is created or updated you may use this project to update the `/e
 
 ## Usage
 
-`pg-userlist [-l] [-d delimeter] connection string`
+`pg-userlist [-l notifier_string] [-d delimeter] connection string`
