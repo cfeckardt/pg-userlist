@@ -12,6 +12,7 @@ import (
 )
 
 var delimeter *string
+var listen *string
 
 func getUsers(db *sql.DB) {
 	var rows, err = db.Query(`SELECT u.usename FROM pg_catalog.pg_user u ORDER BY 1;`)
@@ -19,7 +20,7 @@ func getUsers(db *sql.DB) {
 		fmt.Println("Error: ", err)
 	}
 	names := make([]string, 0)
-	i
+
 	for rows.Next() {
 		var name string
 		err = rows.Scan(&name)
@@ -45,6 +46,7 @@ func waitForNotification(l *pq.Listener, db *sql.DB) {
 
 func main() {
 	delimeter = flag.String("d", "\n", "Delimiter character")
+	listen = flag.String("l", "", "")
 	flag.Parse()
 	var conninfo = strings.Join(flag.Args(), " ")
 
@@ -59,15 +61,17 @@ func main() {
 		}
 	}
 
-	listener := pq.NewListener(conninfo, 10*time.Second, time.Minute, reportProblem)
-	err = listener.Listen("users_changed")
-	if err != nil {
-		panic(err)
-	}
-
 	getUsers(db)
 
-	for {
-		waitForNotification(listener, db)
+	if len(*listen) > 0 {
+		listener := pq.NewListener(conninfo, 10*time.Second, time.Minute, reportProblem)
+		err = listener.Listen("users_changed")
+		if err != nil {
+			panic(err)
+		}
+
+		for {
+			waitForNotification(listener, db)
+		}
 	}
 }
