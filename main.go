@@ -85,7 +85,7 @@ func main() {
 
 	if len(*listen) > 0 {
 		listener := pq.NewListener(conninfo, 10*time.Second, time.Minute, reportProblem)
-		err = listener.Listen("users_changed")
+		err = listener.Listen(*listen)
 		if err != nil {
 			panic(err)
 		}
